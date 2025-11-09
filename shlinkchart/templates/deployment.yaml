@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shlinkchart.fullname" . }}
+  labels: {{- include "shlinkchart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels: {{- include "shlinkchart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "shlinkchart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: DB_DRIVER
+              value: "mysql"
+            - name: DB_HOST
+              value: {{ .Values.env.db.host | quote }}
+            - name: DB_PORT
+              value: {{ .Values.env.db.port | quote }}
+            - name: DB_NAME
+              value: {{ .Values.env.db.name | quote }}
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.dbExistingSecret }}
+                  key: {{ .Values.env.db.userKey }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.dbExistingSecret }}
+                  key: {{ .Values.env.db.passKey }}
+            - name: SHLINK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.env.secretsExistingSecret }}
+                  key: SHLINK_SECRET
